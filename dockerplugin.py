@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- encoding: utf-8 -*-
 #
 # Collectd plugin for collecting docker container stats
@@ -25,12 +25,13 @@
 
 import dateutil.parser
 from distutils.version import StrictVersion
-import docker
 import os
 import threading
 import time
 import sys
 import re
+
+import docker
 
 STREAM_DOCKER_PY_VERSION = (1, 6, 0)
 
@@ -45,12 +46,12 @@ def _c(c):
     return '{id}/{name}'.format(id=c['Id'][:7], name=c['Name'])
 
 
-class Stats:
+class Stats(object):
     @classmethod
     def emit(cls, container, type, value, t=None, type_instance=None):
         val = collectd.Values()
         val.plugin = 'docker'
-        val.plugin_instance = container['Name']
+        val.plugin_instance = container['Id']
 
         if type:
             val.type = type
@@ -155,7 +156,7 @@ class MemoryStats(Stats):
                   mem_stats['usage']]
         cls.emit(container, 'memory.usage', values, t=t)
 
-        for key, value in (mem_stats.get('stats') or {}).items():
+        for key, value in mem_stats.get('stats', {}).items():
             cls.emit(container, 'memory.stats', [value],
                      type_instance=key, t=t)
 
@@ -244,7 +245,7 @@ class ContainerStats(threading.Thread):
         return self._stats
 
 
-class DockerPlugin:
+class DockerPlugin(object):
     """
     CollectD plugin for collecting statistics about running containers via
     Docker's remote API /<container>/stats endpoint.
@@ -340,7 +341,7 @@ class DockerPlugin:
 
 # Command-line execution
 if __name__ == '__main__':
-    class ExecCollectdValues:
+    class ExecCollectdValues(object):
         def dispatch(self):
             if not getattr(self, 'host', None):
                 self.host = os.environ.get('COLLECTD_HOSTNAME', 'localhost')
@@ -353,7 +354,7 @@ if __name__ == '__main__':
             print 'PUTVAL', identifier, \
                   ':'.join(map(str, [int(self.time)] + self.values))
 
-    class ExecCollectd:
+    class ExecCollectd(object):
         def Values(self):
             return ExecCollectdValues()
 
